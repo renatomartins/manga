@@ -1,0 +1,3 @@
+[submodule "manga_downloader"]
+	path = manga_downloader
+	url = git://github.com/jiaweihli/manga_downloader.git
