@@ -38,28 +38,38 @@ EOF
 
 function download_manga {
   # get the dirname of this script, so we know manga_downloader's path
-  local this_dir=`dirname $0`
-  local tmp_dir='/tmp/manga'
+  # we use readlink so, in case this is called with a link, we still get the
+  # real path
+  local this_dir=`dirname $(readlink -f $0)`
+  local dest_zip='/tmp/manga'
+  local dest_img=''
 
-  mkdir $tmp_dir
+  mkdir $dest_zip
   # clean temporary directory in case it already existed
-  rf -r "$tmp_dir/*"
+  rm -rf "$dest_zip/*"
 
   # download zip file to temporary directory
   python "$this_dir/manga_downloader/src/manga.py" --zip $ALL \
-    -d $tmp_dir "${TITLES[@]}"
+    -d $dest_zip "${TITLES[@]}"
+
+  # if we get an error status from python, exit
+  if [[ $? != 0 ]]; then
+    exit $?
+  fi
 
   # unzip files
   # list 1 file per line
-  for zip in `ls -1 $tmp_dir/*.zip`; do
+  for zip in `ls -1 $dest_zip/*.zip`; do
     local filename=`basename "$zip"`
     # get the filename without the extension
     local dirname="${filename%.*}"
-    unzip -d "$tmp_dir/$dirname" "$zip"
+    unzip -d "$dest_zip/$dirname" "$zip"
+    # use `convert` to generate pdf files in the target directory
+    convert "$dest_zip/$dirname/*" "$TARGET/$dirname.pdf"
   done
 
-  #TODO: use "convert" to generate pdf files in the target directory
-
+  # delete temporary directory
+  rm -rf "$dest_zip"
 }
 
 
